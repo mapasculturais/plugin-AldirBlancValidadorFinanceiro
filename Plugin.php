@@ -42,14 +42,6 @@ class Plugin extends \AldirBlanc\PluginValidador
             }
         });
 
-        // uploads de CSVs 
-        $app->hook('template(opportunity.<<single|edit>>.sidebar-right):end', function () use($plugin_aldirblanc, $plugin_validador) {
-            $opportunity = $this->controller->requestedEntity; 
-            if($opportunity->canUser('@control')){
-                $this->part('validador-financeiro/validador-uploads', ['entity' => $opportunity, 'plugin_aldirblanc' => $plugin_aldirblanc, 'plugin_validador' => $plugin_validador]);
-            }
-        });
-
         parent::_init();
     }
 

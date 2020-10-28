@@ -21,7 +21,7 @@ $route = MapasCulturais\App::i()->createUrl($slug, 'export');
         <label for="financeiro-to">Data final</label>  
         <input type="date" name="to" id="financeiro-to">
 
-        <input type="text" name="opportunity" value="<?=$opportunity?>">
+        <input type="hidden" name="opportunity" value="<?=$opportunity?>">
         
         # Caso não queira filtrar entre datas, deixe os campos vazios.
         <button class="btn btn-primary download" type="submit">Exportar</button>

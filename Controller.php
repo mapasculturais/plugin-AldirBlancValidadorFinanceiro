@@ -13,7 +13,7 @@ use MapasCulturais\App;
 use MapasCulturais\Entities\Opportunity;
 use MapasCulturais\Entities\Registration;
 use MapasCulturais\Entities\RegistrationEvaluation;
-use MapasCulturais\i;
+use RegistrationPayments\Payment;
 
 /**
  * Registration Controller
@@ -29,6 +29,25 @@ class Controller extends \MapasCulturais\Controllers\Registration
 
     protected $instanceConfig = [];
 
+    protected $columns = [
+        'NUMERO',
+        'VALIDACAO',
+        'OBSERVACOES',
+        'DATA 1',
+        'VALOR 1',
+        'DATA 2',
+        'VALOR 2',
+        'DATA 3',
+        'VALOR 3',
+        'DATA 4',
+        'VALOR 4',
+        'DATA 5',
+        'VALOR 5'
+    ];
+
+    /**
+     * @var Plugin
+     */
     protected $plugin;
 
     public function setPlugin(Plugin $plugin)
@@ -198,21 +217,7 @@ class Controller extends \MapasCulturais\Controllers\Registration
          * Array com header do documento CSV
          * @var array $headers
          */
-        $headers =  array_merge([
-                'NUMERO',
-                'VALIDACAO',
-                'OBSERVACOES',
-                'DATA 1',
-                'VALOR 1',
-                'DATA 2',
-                'VALOR 2',
-                'DATA 3',
-                'VALOR 3',
-                'DATA 4',
-                'VALOR 4',
-                'DATA 5',
-                'VALOR 5'
-            ]);
+        $headers = $this->columns;
         
         $csv_data = [];
 
@@ -303,28 +308,33 @@ class Controller extends \MapasCulturais\Controllers\Registration
         $opportunity_id = $this->data['opportunity'] ?? 0;
         $file_id = $this->data['file'] ?? 0;
 
+        $config = $app->plugins['AldirBlanc']->config;
+
+        $lab_opportunity_ids = array_merge(
+            [$config['inciso1_opportunity_id']],
+            $config['inciso2_opportunity_ids'],
+            $config['inciso3_opportunity_ids']
+        );
+
+        if(!in_array($opportunity_id, $lab_opportunity_ids)){
+            echo "Opportunidade de id $opportunity_id não é da Lei Aldir Blanc";
+            die;
+        }
+
         $opportunity = $app->repo('Opportunity')->find($opportunity_id);
 
         if (!$opportunity) {
             echo "Opportunidade de id $opportunity_id não encontrada";
+            die;
         }
 
         $opportunity->checkPermission('@control');
-
-        $config = $app->plugins['AldirBlanc']->config;
-
-        $inciso1_opportunity_id = $config['inciso1_opportunity_id'];
-        $inciso2_opportunity_ids = $config['inciso2_opportunity_ids'];
 
         $files = $opportunity->getFiles($this->plugin->getSlug());
         
         foreach ($files as $file) {
             if ($file->id == $file_id) {
-                if($opportunity_id == $inciso1_opportunity_id){
-                    $this->import_inciso1($opportunity, $file->getPath());
-                } else if (in_array($opportunity_id, $inciso2_opportunity_ids)) {
-                    $this->import_inciso2($opportunity, $file->getPath());
-                }
+                $this->import($opportunity, $file->getPath());
             }
         }
     }
@@ -332,10 +342,10 @@ class Controller extends \MapasCulturais\Controllers\Registration
     /**
      * Importador para o inciso 1
      *
-     * http://localhost:8080/{slug}/import_inciso1/
+     * http://localhost:8080/{slug}/import/
      *
      */
-    public function import_inciso1(Opportunity $opportunity, string $filename)
+    public function import(Opportunity $opportunity, string $filename)
     {
 
         /**
@@ -380,10 +390,18 @@ class Controller extends \MapasCulturais\Controllers\Registration
             $header_file[] = $value;
             break;
         }
+        $required_columns = ['NUMERO', 'VALIDACAO', 'OBSERVACOES', 'DATA 1', 'VALOR 1'];
 
-        if(!isset($header_file[0]['NUMERO']) || !isset($header_file[0]['AVALIACAO']) || !isset($header_file[0]['OBSERVACOES'])) {
-            die('As colunas NUMERO, AVALIACAO e OBSERVACOES são obrigatórias');
+        $columns = '"' . implode('", "', $required_columns) . '"';
+        foreach ($required_columns as $column) {
+            if (!isset($header_file[0][$column])) {
+                die("As colunas {$columns} são obrigatórias");
+            }
         }
+
+        $user = $this->plugin->getUser();
+
+        eval(\psy\sh());
 
         $slug = $this->plugin->slug;
         $name = $this->plugin->name;
@@ -393,14 +411,18 @@ class Controller extends \MapasCulturais\Controllers\Registration
         foreach ($results as $i => $line) {
             $num = $line['NUMERO'];
             $obs = $line['OBSERVACOES'];
-            $eval = $line['AVALIACAO'];
+            $eval = $line['VALIDACAO'];
 
-            switch(strtolower($line['AVALIACAO'])){
+            switch(strtolower($eval)){
+                case 'aprovado':
+                case 'aprovada':
                 case 'selecionado':
                 case 'selecionada':
                     $result = '10';
                 break;
 
+                case 'negada':
+                case 'negado':
                 case 'invalido':
                 case 'inválido':
                 case 'invalida':
@@ -420,8 +442,21 @@ class Controller extends \MapasCulturais\Controllers\Registration
                 break;
                 
                 default:
-                    die("O valor da coluna AVALIACAO da linha $i está incorreto. Os valores possíveis são 'selecionada', 'invalida', 'nao selecionada' ou 'suplente'");
+                    die("O valor da coluna VALIDACAO da linha $i está incorreto ($eval). Os valores possíveis são 'selecionada' ou 'aprovada', 'invalida', 'nao selecionada' ou 'suplente'");
                 
+            }
+
+            if ($result == '10' && empty($obs)) {
+                $obs = "Inscrição Aprovada\n------------------";
+                for ($i = 1; $i <= 5; $i++) {
+                    $data = $line["DATA {$i}"] ?? null;
+                    $valor = $line["VALOR {$i}"] ?? null;
+                    if ($data && $valor) {
+                        $data = (new \DateTime($data))->format('d/m/Y');
+                        $valor = number_format($valor, 2);
+                        $obs .= "\nR$ $valor a serem pagos em {$data}";
+                    }
+                }
             }
             
             $registration = $app->repo('Registration')->findOneBy(['number' => $num]);
@@ -451,6 +486,22 @@ class Controller extends \MapasCulturais\Controllers\Registration
             $evaluation->status = 1;
 
             $evaluation->save(true);
+
+            for ($i = 1; $i <= 5; $i++) {
+                $data = $line["DATA {$i}"] ?? null;
+                $valor = $line["VALOR {$i}"] ?? null;
+                if ($data && $valor) {
+                    $payment = new Payment;
+                    $payment->createdByUser = $this->plugin->getUser();
+                    $payment->paymentDate = $data;
+                    $payment->amount = $valor;
+                    $payment->registration = $registration;
+                    $payment->metadata->csv_line = $line;
+                    $payment->metadata->csv_filename = $filename;
+
+                    $payment->save(true);
+                }
+            }
 
             $app->em->clear();
         }

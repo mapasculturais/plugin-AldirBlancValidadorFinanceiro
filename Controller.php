@@ -401,8 +401,6 @@ class Controller extends \MapasCulturais\Controllers\Registration
 
         $user = $this->plugin->getUser();
 
-        eval(\psy\sh());
-
         $slug = $this->plugin->slug;
         $name = $this->plugin->name;
         

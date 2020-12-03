@@ -50,6 +50,36 @@ class Plugin extends \AldirBlanc\PluginValidador
             }
         });
 
+        // atualiza os metadados legados para o novo formato requerido
+        if (!$app->repo('DbUpdate')->findBy(['name' => 'update registration_meta financeiro'])) {
+            $conn = $app->em->getConnection();
+            $conn->beginTransaction();
+            
+            $slug = $this->getSlug();
+            $conn->executeQuery("
+                UPDATE 
+                    registration_meta 
+                SET 
+                    value = CONCAT('[\"',value,'\"]') 
+                WHERE 
+                    key = '{$slug}_filename'");
+                    
+            $conn->executeQuery("
+                UPDATE 
+                    registration_meta 
+                SET 
+                    value = CONCAT('[',value,']') 
+                WHERE 
+                    key = '{$slug}_raw'");
+
+            $app->disableAccessControl();
+            $db_update = new \MapasCulturais\Entities\DbUpdate;
+            $db_update->name = 'update registration_meta financeiro';
+            $db_update->save(true);
+            $app->enableAccessControl();
+            $conn->commit();
+        }
+
         parent::_init();
     }
 

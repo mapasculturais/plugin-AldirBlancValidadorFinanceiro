@@ -98,16 +98,11 @@ class Controller extends \MapasCulturais\Controllers\Registration
     protected function getRegistrations(Opportunity $opportunity){
         $app = App::i();
 
-        // status das inscrições
-        $status = intval($this->data['status'] ?? 1);
-
-        $dql_params = [
-            'opportunity_Id' => $opportunity->id,
-            'status' => $status,
-        ];
+        $dql_params = [ 'opportunity_Id' => $opportunity->id ];
 
         $from = $this->data['from'] ?? '';
         $to = $this->data['to'] ?? '';
+        $only_unprocessed = $this->data['only_unprocessed'] ?? false;
 
         if ($from && !DateTime::createFromFormat('Y-m-d', $from)) {
             throw new \Exception("O formato do parâmetro `from` é inválido.");
@@ -139,7 +134,7 @@ class Controller extends \MapasCulturais\Controllers\Registration
             WHERE
                 $dql_to
                 $dql_from
-                e.status = :status AND
+                e.status IN (1,10) AND
                 e.opportunity = :opportunity_Id";
 
         $query = $app->em->createQuery($dql);
@@ -163,10 +158,12 @@ class Controller extends \MapasCulturais\Controllers\Registration
             
             $eligible = true;
 
-            // verifica se este validador já validou esta inscrição
-            foreach ($evaluations as $evaluation) {
-                if($validator_user->equals($evaluation->user)) {
-                    $eligible = false;
+            if ($only_unprocessed) {
+                // verifica se este validador já validou esta inscrição
+                foreach ($evaluations as $evaluation) {
+                    if($validator_user->equals($evaluation->user)) {
+                        $eligible = false;
+                    }
                 }
             }
             
@@ -397,7 +394,7 @@ class Controller extends \MapasCulturais\Controllers\Registration
         $csv = Reader::createFromStream($stream);
 
         //Define o limitador do arqivo (, ou ;)
-        // $csv->setDelimiter(";");
+        $csv->setDelimiter(",");
 
         //Seta em que linha deve se iniciar a leitura
         $header_temp = $csv->setHeaderOffset(0);
@@ -487,17 +484,24 @@ class Controller extends \MapasCulturais\Controllers\Registration
             
             $registration = $app->repo('Registration')->findOneBy(['number' => $num]);
             $registration->__skipQueuingPCacheRecreation = true;
+
+            $raw_data = $registration->{$slug . '_raw'};
+            $filesnames = $registration->{$slug . '_filename'};
             
             /* @TODO: implementar atualização de status?? */
-            if ($registration->{$slug . '_raw'} != (object) []) {
+            if (in_array($filename, $filesnames)) {
                 $app->log->info("$name #{$count} {$registration} $eval - JÁ PROCESSADA");
                 continue;
             }
             
             $app->log->info("$name #{$count} {$registration} $eval");
-            
-            $registration->{$slug . '_raw'} = $line;
-            $registration->{$slug . '_filename'} = $filename;
+
+            $raw_data[] = $line;
+            $filesnames[] = $filename;
+
+            $registration->{$slug . '_raw'} = $raw_data;
+            $registration->{$slug . '_filename'} = $filesnames;
+
             $registration->save(true);
     
             $user = $this->plugin->user;

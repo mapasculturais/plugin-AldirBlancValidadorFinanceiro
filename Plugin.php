@@ -67,22 +67,16 @@ class Plugin extends \AldirBlanc\PluginValidador
 
         $this->registerRegistrationMetadata($slug . '_filename', [
             'label' => 'Nome do arquivo de retorno do validador financeiro',
-            'type' => 'string',
+            'type' => 'json',
             'private' => true,
+            'default_value' => '[]'
         ]);
 
         $this->registerRegistrationMetadata($slug . '_raw', [
             'label' => 'Validador Financeiro raw data (csv row)',
             'type' => 'json',
             'private' => true,
-            'default_value' => '{}'
-        ]);
-
-        $this->registerRegistrationMetadata($slug . '_processed', [
-            'label' => 'Validador Financeiro processed data',
-            'type' => 'json',
-            'private' => true,
-            'default_value' => '{}'
+            'default_value' => '[]'
         ]);
 
         $file_group_definition = new \MapasCulturais\Definitions\FileGroup($slug, ['^text/csv$'], 'O arquivo enviado não é um csv.',false,null,true);

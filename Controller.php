@@ -42,7 +42,21 @@ class Controller extends \MapasCulturais\Controllers\Registration
         'DATA 4',
         'VALOR 4',
         'DATA 5',
-        'VALOR 5'
+        'VALOR 5',
+        'DATA 6',
+        'VALOR 6',
+        'DATA 7',
+        'VALOR 7',
+        'DATA 8',
+        'VALOR 8',
+        'DATA 9',
+        'VALOR 9',
+        'DATA 10',
+        'VALOR 10',
+        'DATA 11',
+        'VALOR 11',
+        'DATA 12',
+        'VALOR 12'
     ];
 
     /**
@@ -236,6 +250,20 @@ class Controller extends \MapasCulturais\Controllers\Registration
                 'VALOR 4' => null,
                 'DATA 5' => null,
                 'VALOR 5' => null,
+                'DATA 6' => null,
+                'VALOR 6' => null,
+                'DATA 7' => null,
+                'VALOR 7' => null,
+                'DATA 8' => null,
+                'VALOR 8' => null,
+                'DATA 9' => null,
+                'VALOR 9' => null,
+                'DATA 10' => null,
+                'VALOR 10' => null,
+                'DATA 11' => null,
+                'VALOR 11' => null,
+                'DATA 12' => null,
+                'VALOR 12' => null,
             ];
         }
 
@@ -446,7 +474,7 @@ class Controller extends \MapasCulturais\Controllers\Registration
 
             if ($result == '10' && empty($obs)) {
                 $obs = "Inscrição Aprovada\n------------------";
-                for ($i = 1; $i <= 5; $i++) {
+                for ($i = 1; $i <= 12; $i++) {
                     $data = $line["DATA {$i}"] ?? null;
                     $valor = $line["VALOR {$i}"] ?? null;
                     if ($data && $valor) {

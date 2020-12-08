@@ -31,6 +31,7 @@ class Controller extends \MapasCulturais\Controllers\Registration
 
     protected $columns = [
         'NUMERO',
+        'MONO_PARENTAL',
         'VALIDACAO',
         'OBSERVACOES',
         'DATA 1',
@@ -230,11 +231,31 @@ class Controller extends \MapasCulturais\Controllers\Registration
          */
         $headers = $this->columns;
         
+        $config = $this->config['coluna_mulher_mono_parental'];
+
         $csv_data = [];
 
         foreach ($registrations as $i => $registration) {
+
+            $monoParental = null;
+            if($config['status']){
+                if($config['tipo_busca'] === "id"){
+                    $monoParental = $registration->getMetadata('field_'.$config['referencia']) ?? null;
+                    
+                }else if($config['tipo_busca'] === "name"){
+                    foreach($registration->opportunity->registrationFieldConfigurations as $field){
+                        if($config['referencia'] === $field->title){                    
+                            $monoParental = $registration->getMetadata('field_'.$field->id) ?? null;
+                            break;
+    
+                        }
+                    }              
+                }
+            }
+                        
             $csv_data[$i] = [
                 'NUMERO' => $registration->number,
+                'MONO_PARENTAL' => $monoParental,
                 'VALIDACAO' => null,
                 'OBSERVACOES' => null,
                 'DATA 1' => null,
@@ -260,9 +281,9 @@ class Controller extends \MapasCulturais\Controllers\Registration
                 'DATA 11' => null,
                 'VALOR 11' => null,
                 'DATA 12' => null,
-                'VALOR 12' => null,
-            ];
-        }
+                'VALOR 12' => null                
+            ];            
+        }        
 
         $validador = $this->plugin->getSlug();
         $hash = md5(json_encode($csv_data));
@@ -524,7 +545,7 @@ class Controller extends \MapasCulturais\Controllers\Registration
                     $payment = new Payment;
                     $payment->createdByUser = $this->plugin->getUser();
                     $payment->paymentDate = $data;
-                    $payment->amount = $valor;
+                    $payment->amount = str_replace(',','.',$valor);
                     $payment->registration = $registration;
                     $payment->metadata->csv_line = $line;
                     $payment->metadata->csv_filename = $filename;

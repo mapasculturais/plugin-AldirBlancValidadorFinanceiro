@@ -3,17 +3,18 @@
 namespace AldirBlancValidadorFinanceiro;
 
 use DateTime;
-use Doctrine\ORM\ORMException;
 use Exception;
-use InvalidArgumentException;
-use League\Csv\Writer;
+use Normalizer;
 use League\Csv\Reader;
-use League\Csv\Statement;
+use League\Csv\Writer;
 use MapasCulturais\App;
+use League\Csv\Statement;
+use InvalidArgumentException;
+use Doctrine\ORM\ORMException;
+use RegistrationPayments\Payment;
 use MapasCulturais\Entities\Opportunity;
 use MapasCulturais\Entities\Registration;
 use MapasCulturais\Entities\RegistrationEvaluation;
-use RegistrationPayments\Payment;
 
 /**
  * Registration Controller
@@ -31,7 +32,8 @@ class Controller extends \MapasCulturais\Controllers\Registration
 
     protected $columns = [
         'NUMERO',
-        'MONO_PARENTAL',
+        'MONO_PARENTAL_INSCRICAO',
+        'MONO_PARENTAL_DATAPREV',
         'VALIDACAO',
         'OBSERVACOES',
         'DATA 1',
@@ -235,17 +237,23 @@ class Controller extends \MapasCulturais\Controllers\Registration
 
         $csv_data = [];
 
-        foreach ($registrations as $i => $registration) {
 
+        foreach ($registrations as $i => $registration) {   
+                  
             $monoParental = null;
-            if($config['status']){
+            $monoParentalInscricao = null;
+            $monoParentalDataprev = null;
+            $opportunity = $this->data['opportunity'];
+            if($config['status'] && $registration->getMetadata('inciso') == 1){
+                $monoParentalDataprev = json_decode($registration->getMetadata('dataprev_raw'))->IN_MULH_PROV_MONOPARENT;
+                
                 if($config['tipo_busca'] === "id"){
-                    $monoParental = $registration->getMetadata('field_'.$config['referencia']) ?? null;
-                    
+                    $monoParentalInscricao = $registration->getMetadata('field_'.$config['referencia']) ?? null;                    
+                   
                 }else if($config['tipo_busca'] === "name"){
                     foreach($registration->opportunity->registrationFieldConfigurations as $field){
                         if($config['referencia'] === $field->title){                    
-                            $monoParental = $registration->getMetadata('field_'.$field->id) ?? null;
+                            $monoParentalInscricao = $registration->getMetadata('field_'.$field->id) ?? null;
                             break;
     
                         }
@@ -255,7 +263,8 @@ class Controller extends \MapasCulturais\Controllers\Registration
                         
             $csv_data[$i] = [
                 'NUMERO' => $registration->number,
-                'MONO_PARENTAL' => $monoParental,
+                'MONO_PARENTAL' => strtoupper($this->normalizeString($monoParentalInscricao)),
+                'MONO_PARENTAL_DATAPREV' => strtoupper($this->normalizeString($monoParentalDataprev)),
                 'VALIDACAO' => null,
                 'OBSERVACOES' => null,
                 'DATA 1' => null,
@@ -577,5 +586,17 @@ class Controller extends \MapasCulturais\Controllers\Registration
 
     public function import_inciso2() {
         
+    }
+
+     /**
+     * Normaliza uma string
+     *
+     * @param string $valor
+     * @return string
+     */
+    private function normalizeString($valor): string
+    {
+        $valor = Normalizer::normalize($valor, Normalizer::FORM_D);
+        return preg_replace('/[^A-Za-z0-9 ]/i', '', $valor);
     }
 }

@@ -18,7 +18,7 @@ class Plugin extends \AldirBlanc\PluginValidador
 
             //Configura a coluna de monoparental no exportador de validação financeira
             'coluna_mulher_mono_parental' => [
-                'status' => false,//<= Setar como true caso queira ativar a impressão da coluna que informa se é monoparental ou não no exportador financeiiro ou false para manter desativado
+                'status' => true,//<= Setar como true caso queira ativar a impressão da coluna que informa se é monoparental ou não no exportador financeiiro ou false para manter desativado
                 'tipo_busca' => 'id',//<= Setar como deve ser feita a pesquisa. (name = nome do campo) ou  (id = id do campo)
                 'referencia' => 00 //<= setar aqui o ID do campo ou nome do campo " ATENÇAO, escolha ID, NÃO INFORMAR o texto field, apenas o ID"
             ]

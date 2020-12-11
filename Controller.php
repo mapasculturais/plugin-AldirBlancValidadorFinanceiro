@@ -32,7 +32,7 @@ class Controller extends \MapasCulturais\Controllers\Registration
 
     protected $columns = [
         'NUMERO',
-        'MONO_PARENTAL_INSCRICAO',
+        //'MONO_PARENTAL_INSCRICAO',
         'MONO_PARENTAL_DATAPREV',
         'VALIDACAO',
         'OBSERVACOES',
@@ -263,7 +263,7 @@ class Controller extends \MapasCulturais\Controllers\Registration
                         
             $csv_data[$i] = [
                 'NUMERO' => $registration->number,
-                'MONO_PARENTAL' => strtoupper($this->normalizeString($monoParentalInscricao)),
+                //'MONO_PARENTAL' => strtoupper($this->normalizeString($monoParentalInscricao)),
                 'MONO_PARENTAL_DATAPREV' => strtoupper($this->normalizeString($monoParentalDataprev)),
                 'VALIDACAO' => null,
                 'OBSERVACOES' => null,

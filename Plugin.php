@@ -23,6 +23,7 @@ class Plugin extends \AldirBlanc\PluginValidador
                 'referencia' => 00 //<= setar aqui o ID do campo ou nome do campo " ATENÇAO, escolha ID, NÃO INFORMAR o texto field, apenas o ID"
             ]
         ];
+        $config['forcar_resultado'] = true;
         $this->_config = $config;
         parent::__construct($config);
     }

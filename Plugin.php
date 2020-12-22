@@ -35,25 +35,25 @@ class Plugin extends \AldirBlanc\PluginValidador
         $plugin_aldirblanc = $app->plugins['AldirBlanc'];
         $plugin_validador = $this;
 
+        $opportunities_ids = $this->getOpportunitiesIds();
+
         //botao de export csv
-        $app->hook('template(opportunity.single.header-inscritos):end', function () use($plugin_aldirblanc, $plugin_validador, $app){
-            $inciso1Ids = [$plugin_aldirblanc->config['inciso1_opportunity_id']];
-            $inciso2Ids = array_values($plugin_aldirblanc->config['inciso2_opportunity_ids']);
-            $inciso3Ids = is_array($plugin_aldirblanc->config['inciso3_opportunity_ids']) ? $plugin_aldirblanc->config['inciso3_opportunity_ids'] : [];
+        $app->hook('template(opportunity.single.header-inscritos):end', function () use($plugin_aldirblanc, $plugin_validador, $app, $opportunities_ids){
             
-            $opportunities_ids = array_merge($inciso1Ids, $inciso2Ids, $inciso3Ids);
-            $requestedOpportunity = $this->controller->requestedEntity; //Tive que chamar o controller para poder requisitar a entity
-            $opportunity = $requestedOpportunity->id;
-            if(($requestedOpportunity->canUser('@control')) && in_array($requestedOpportunity->id,$opportunities_ids) ) {
+            $opportunity = $this->controller->requestedEntity; //Tive que chamar o controller para poder requisitar a entity
+            
+            if (in_array($opportunity->id,$opportunities_ids) && $opportunity->canUser('@control')) {
                 $app->view->enqueueScript('app', 'aldirblanc', 'aldirblanc/app.js');
-                $this->part('validador-financeiro/csv-button', ['opportunity' => $opportunity, 'plugin_aldirblanc' => $plugin_aldirblanc, 'plugin_validador' => $plugin_validador]);
+                $this->part('validador-financeiro/csv-button', ['opportunity' => $opportunity->id, 'plugin_aldirblanc' => $plugin_aldirblanc, 'plugin_validador' => $plugin_validador]);
             }
         });
 
         // uploads de CSVs 
-        $app->hook('template(opportunity.<<single|edit>>.sidebar-right):end', function () use($plugin_aldirblanc, $plugin_validador) {
+        $app->hook('template(opportunity.<<single|edit>>.sidebar-right):end', function () use($plugin_aldirblanc, $plugin_validador, $opportunities_ids) {
+            
             $opportunity = $this->controller->requestedEntity; 
-            if($opportunity->canUser('@control')){
+
+            if (in_array($opportunity->id,$opportunities_ids) && $opportunity->canUser('@control')) {
                 $this->part('validador-financeiro/validador-uploads', ['entity' => $opportunity, 'plugin_aldirblanc' => $plugin_aldirblanc, 'plugin_validador' => $plugin_validador]);
             }
         });
